@@ -10,7 +10,7 @@ import (
 
 type RequestTaskData struct {
 	ID  string  `json:"ID"`
-	Err error   `json:"err,omitempty"`
+	Msg string  `json:"msg,omitempty"`
 	Res float64 `json:"result"`
 }
 
@@ -19,11 +19,14 @@ func agent() {
 		task, err := getTask()
 		if err == nil {
 			res, err2 := solveTask(task)
-			sendResult(RequestTaskData{
+			data := RequestTaskData{
 				ID:  task.ID,
-				Err: err2,
 				Res: res,
-			})
+			}
+			if err2 != nil {
+				data.Msg = err2.Error()
+			}
+			sendResult(data)
 		} else {
 			time.Sleep(time.Second)
 		}

@@ -145,5 +145,18 @@ func Calc(expression string, curID int) ([]Action, error) {
 		return nil, ErrCalc
 	}
 
+	if len(nums) == 1 && len(actions) == 0 {
+		if n, err := strconv.ParseFloat(nums[0], 64); err == nil {
+			actions = append(actions, Action{
+				ID:        fmt.Sprintf("%d_0", curID),
+				Arg1:      n,
+				Arg2:      0,
+				Result:    0,
+				Operation: "+",
+				IdDepends: []string{"-1", "-1"},
+			})
+		}
+	}
+
 	return actions, nil
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/hidnt/calc_go_yandex_2/pkg/calculation"
 )
@@ -170,14 +169,6 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				json.NewEncoder(w).Encode(task)
-				go func(t int, exprID, actionID int, orch *Orchestrator) {
-					timer := time.NewTimer(time.Duration(task.Operation_time+1000) * time.Millisecond)
-					<-timer.C
-					orchestrator.Expr[exprID].Actions[actionID].NowCalculate = false
-					if !orchestrator.Expr[exprID].Actions[actionID].Completed {
-
-					}
-				}(task.Operation_time, exprID, actionID, orchestrator)
 				taskBreak = true
 				orchestrator.Expr[exprID].Actions[actionID].NowCalculate = true
 				break
@@ -206,7 +197,7 @@ func CompleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Expression %d, task %d was completed", exprID, actionID)
 
-	if request.Err != nil {
+	if request.Msg != "" {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		orchestrator.Expr[exprID].Status = "division by zero"
 	} else {
@@ -231,6 +222,8 @@ func (a *Application) RunServer() error {
 	for i := 0; i < a.config.ComputingAmount; i++ {
 		go agent()
 	}
+
+	http.Handle("/api/v1/", http.StripPrefix("/api/v1", http.FileServer(http.Dir("./static."))))
 
 	http.HandleFunc("/api/v1/calculate", CalcHandler)
 	http.HandleFunc("/api/v1/expressions", GetExprHandler)

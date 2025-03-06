@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Калькулятор выражений</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Темная тема */
+        :root {
+            --bg: #1a1a1a;
+            --text: #e0e0e0;
+            --primary: #4a90e2;
+            --border: #404040;
+            --card-bg: #2d2d2d;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            background: #333;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px;
+            width: 200px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Секция ввода выражения -->
+        <div class="card">
+            <h2>Новое выражение</h2>
+            <input type="text" id="expression" placeholder="1+2*3">
+            <button onclick="submitExpression()">Отправить</button>
+            <div id="result"></div>
+        </div>
+
+        <!-- Список выражений -->
+        <div class="card">
+            <h2>Все выражения <button onclick="loadExpressions()">Обновить</button></h2>
+            <div id="expressions"></div>
+        </div>
+
+        <!-- Поиск по ID -->
+        <div class="card">
+            <h2>Поиск по ID</h2>
+            <input type="text" id="searchId" placeholder="Введите ID">
+            <button onclick="searchById()">Найти</button>
+            <div id="searchResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Обработчик отправки выражения
+        async function submitExpression() {
+            const expr = document.getElementById('expression').value;
+            try {
+                const response = await fetch('/api/v1/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expression: expr })
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').innerHTML = 
+                    `Отправлено. ID: ${data.id}`;
+                loadExpressions();
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+
+        // Загрузка всех выражений
+        async function loadExpressions() {
+            try {
+                const response = await fetch('/api/v1/expressions');
+                const data = await response.json();
+                
+                // Адаптация под разные форматы ответа
+                const items = Array.isArray(data) ? data : data.expressions || [];
+                
+                document.getElementById('expressions').innerHTML = items
+                    .map(item => `
+                        <div class="expression-item">
+                            ID: ${item.id} 
+                            <span class="status ${item.status.replace(/\s+/g, '-')}">
+                                ${item.status}
+                            </span>
+                            ${item.result ? `Result: ${item.result}` : ''}
+                        </div>
+                    `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+            }
+        }
+
+        // Поиск по ID
+        async function searchById() {
+            const id = document.getElementById('searchId').value;
+            try {
+                const response = await fetch(`/api/v1/expressions/:${id}`);
+                const data = await response.json();
+                
+                // Обработка разных форматов ответа
+                const expr = data.expression || data;
+                
+                document.getElementById('searchResult').innerHTML = `
+                    <div>
+                        ID: ${expr.id}<br>
+                        Status: <span class="status ${expr.status.replace(/\s+/g, '-')}">
+                            ${expr.status}
+                        </span><br>
+                        ${expr.result ? `Result: ${expr.result}` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Ошибка поиска:', error);
+            }
+        }
+
+        // Первоначальная загрузка
+        loadExpressions();
+    </script>
+</body>
+</html>
